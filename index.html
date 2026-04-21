@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flint</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient-start: #141417;
+            --bg-gradient-end: #09090b;
+            --panel-bg: rgba(24, 24, 27, 0.6);
+            --text: #fafafa;
+            --text-soft: #a1a1aa;
+            --border-light: rgba(255, 255, 255, 0.04);
+            --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%; 
+            overflow: hidden; 
+            background: radial-gradient(circle at top, var(--bg-gradient-start), var(--bg-gradient-end) 80%) no-repeat fixed;
+            color: var(--text); 
+            font-family: 'Inter', sans-serif;
+        }
+        
+        #particles-js {
+            position: fixed; width: 100%; height: 100%;
+            z-index: 1;
+            transition: opacity 0.5s ease;
+            pointer-events: none; 
+        }
+
+        #main-frame { 
+            display: none; 
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+            z-index: 10; 
+        }
+
+        #init-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 99999;
+            flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+
+        #init-overlay.active { display: flex; opacity: 1; }
+
+        .init-box { 
+            background: var(--panel-bg);
+            border: 1px solid var(--border-light);
+            padding: 40px;
+            border-radius: 32px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-soft);
+            transform: scale(0.95);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+
+        .title {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-soft);
+            line-height: 1.5;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .button-group {
+            display: none; /* Hidden until popup is blocked */
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            color: var(--text);
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <div id="init-overlay">
+        <div class="init-box">
+            <div class="spinner" id="loading-spinner"></div>
+            <h2 class="title">Flint Loader</h2>
+            <p class="subtitle" id="launch-text">Starting up Flint...</p>
+            
+            <div class="button-group" id="action-buttons">
+                <button class="btn btn-primary" onclick="forceLaunch()">Open in New Tab (about:blank)</button>
+                <button class="btn" onclick="launchInCurrentTab()">Open Here (Cloaked)</button>
+            </div>
+        </div>
+    </div>
+
+    <iframe id="main-frame" src="window.html" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+
+    <script>
+        window.onload = function() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": { "value": 50, "density": { "enable": true, "value_area": 1200 } },
+                    "color": { "value": "#ffffff" },
+                    "shape": { "type": "circle" },
+                    "opacity": { "value": 0.2, "random": true },
+                    "size": { "value": 2, "random": true },
+                    "line_linked": { "enable": false },
+                    "move": { "enable": true, "speed": 1.2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+                },
+                "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false } } },
+                "retina_detect": true
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('cloaked')) {
+                document.getElementById('main-frame').style.display = 'block';
+                document.getElementById('init-overlay').style.display = 'none';
+                document.getElementById('particles-js').style.opacity = '0.1';
+            } else {
+                document.getElementById('init-overlay').classList.add('active');
+                
+                setTimeout(() => {
+                    attemptAutoLaunch();
+                }, 800);
+            }
+        };
+
+        function attemptAutoLaunch() {
+            const win = window.open('about:blank', '_blank');
+            
+            if (!win || win.closed || typeof win.closed == 'undefined') {
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('launch-text').innerHTML = "Auto-launch blocked by browser.<br><br><span style='color: #fafafa; font-weight: 500;'>Please choose a launch method:</span>";
+                document.getElementById('action-buttons').style.display = 'flex';
+            } else {
+                setupCloak(win);
+            }
+        }
+
+        function forceLaunch() {
+            const win = window.open('about:blank', '_blank');
+            if (win) {
+                setupCloak(win);
+            } else {
+                alert("Popup strictly blocked! Please allow popups for this site or use the 'Open Here' option.");
+            }
+        }
+
+        function launchInCurrentTab() {
+            document.title = 'Google Drive';
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png';
+
+            document.getElementById('main-frame').style.display = 'block';
+            document.getElementById('init-overlay').style.display = 'none';
+            document.getElementById('particles-js').style.opacity = '0.1';
+        }
+
+        function setupCloak(win) {
+            win.document.title = 'Google Drive';
+            const link = win.document.createElement('link');
+            link.rel = 'icon';
+            link.href = 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png';
+            win.document.head.appendChild(link);
+
+            const iframe = win.document.createElement('iframe');
+            const cleanUrl = window.location.href.split('?')[0];
+            iframe.src = cleanUrl + "?cloaked=true";
+            iframe.style.cssText = "position:fixed;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;margin:0;padding:0;overflow:hidden;z-index:999999;";
+            
+            win.document.body.style.margin = "0";
+            win.document.body.appendChild(iframe);
+
+            window.location.replace('https://classroom.google.com');
+        }
+    </script>
+</body>
+</html>
